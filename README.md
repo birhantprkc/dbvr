@@ -1,0 +1,2 @@
+# dbvr
+DBeaver CLI
