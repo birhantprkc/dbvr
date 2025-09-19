@@ -22,8 +22,8 @@ jobs:
     name: Build
     secrets: inherit
     with:
-      project-directory: ./dbeaver-ee/product/aggregate
-      project-deps: ./dbeaver-ee/project.deps
+      project-directory: ./dbvr/products/aggregate
+      project-deps: ./dbvr/project.deps
       timeout-minutes: 15
       mvn-args: -Dheadless-platform
       use-private-p2: true
