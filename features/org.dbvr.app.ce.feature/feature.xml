@@ -15,6 +15,7 @@
     <includes id="org.dbvr.cli.feature" version="0.0.0"/>
     <includes id="org.jkiss.dbeaver.runtime.feature" version="0.0.0"/>
 
+    <plugin id="org.dbvr.app.ce" version="0.0.0"/>
     <plugin id="org.jkiss.dbeaver.launcher" version="0.0.0"/>
 
 </feature>

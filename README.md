@@ -1,2 +1,3 @@
 # dbvr
-DBeaver CLI
+
+Command Line Interface for DBeaver and CloudBeaver
