@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Vendor: DBeaver Corp
+Bundle-Name: DBeaver CLI SQL
+Bundle-SymbolicName: org.dbvr.cli.sql;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Release-Date: 20251006
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Require-Bundle: org.eclipse.core.runtime,
+ org.jkiss.dbeaver.model;visibility:=reexport,
+ org.jkiss.dbeaver.registry;visibility:=reexport,
+ org.jkiss.utils;visibility:=reexport
+Automatic-Module-Name: org.dbvr.cli.sql

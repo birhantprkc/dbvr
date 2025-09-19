@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Base for standalone applications. Includes minimum set of plugins -->
+<feature
+        id="org.dbvr.app.ce.feature"
+        label="DBeaver CLI Community"
+        version="25.2.2.qualifier"
+        provider-name="DBeaver Corp"
+        plugin="org.dbvr.app.ce">
+
+    <description>DBeaver command line application</description>
+
+    <copyright>DBeaver Corp and others</copyright>
+    <license url="https://dbeaver.io/product/dbeaver_license.txt"/>
+
+    <includes id="org.dbvr.cli.feature" version="0.0.0"/>
+    <includes id="org.jkiss.dbeaver.runtime.feature" version="0.0.0"/>
+
+    <plugin id="org.jkiss.dbeaver.launcher" version="0.0.0"/>
+
+</feature>
