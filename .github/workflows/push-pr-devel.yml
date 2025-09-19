@@ -1,0 +1,34 @@
+name: PR Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    branches: [devel]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  MAVEN_OPTS: -Xmx2048m
+
+jobs:
+  build-java:
+    uses: dbeaver/dbeaver-common/.github/workflows/mvn-package.yml@devel
+    name: Build
+    secrets: inherit
+    with:
+      project-directory: ./dbeaver-ee/product/aggregate
+      project-deps: ./dbeaver-ee/project.deps
+      timeout-minutes: 15
+      mvn-args: -Dheadless-platform
+      use-private-p2: true
+
+  lint-java:
+    name: Check style
+    uses: dbeaver/dbeaver-common/.github/workflows/java-checkstyle.yml@devel
+    secrets: inherit

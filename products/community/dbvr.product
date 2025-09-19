@@ -46,7 +46,7 @@
         <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.cocoa.useNativeItemHeight=false</vmArgsMac>
     </launcherArgs>
 
-    <launcher name="dbeaver">
+    <launcher name="dbvr">
         <linux icon="/icons/dbvr.xpm"/>
         <macosx icon="/icons/dbvr.icns"/>
         <win useIco="true">
@@ -58,10 +58,10 @@
     </vm>
 
     <license>
-        <url>https://dbeaver.io/about/</url>
+        <url>https://dbvr.prg/about/</url>
         <text>
-            DBeaver - Universal Database Manager
-            Copyright (C) 2010-2024 DBeaver Corp and others
+            dbvr - Universal Database Manager CLI
+            Copyright (C) 2010-2025 DBeaver Corp and others
 
             Licensed under the Apache License, Version 2.0 (the "License");
             you may not use this file except in compliance with the License.
