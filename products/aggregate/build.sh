@@ -1,0 +1,1 @@
+mvn clean package -T1C -Dheadless-platform
