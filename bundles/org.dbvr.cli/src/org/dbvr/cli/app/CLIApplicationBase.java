@@ -36,6 +36,22 @@ public class CLIApplicationBase extends BaseApplicationImpl {
     @NotNull
     @Override
     public Object start(IApplicationContext context) throws Exception {
+/*
+        Location instanceLoc = Platform.getInstanceLocation();
+
+        CommandLine commandLine = DBeaverCommandLine.getInstance().getCommandLine();
+        String defaultHomePath = getDefaultInstanceLocation();
+        if (DBeaverCommandLine.getInstance()
+            .handleCommandLineAsClient(commandLine, defaultHomePath)
+            .getPostAction() == CliProcessResult.PostAction.SHUTDOWN
+        ) {
+            if (!Log.isQuietMode()) {
+                System.err.println("Commands processed. Exit " + GeneralUtils.getProductName() + ".");
+            }
+            return IApplication.EXIT_OK;
+        }
+*/
+
         return EXIT_OK;
     }
 
