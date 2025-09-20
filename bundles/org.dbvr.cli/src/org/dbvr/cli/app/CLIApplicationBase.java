@@ -36,7 +36,6 @@ public class CLIApplicationBase extends BaseApplicationImpl {
     @NotNull
     @Override
     public Object start(IApplicationContext context) throws Exception {
-        System.out.println("CLI app started");
         return EXIT_OK;
     }
 

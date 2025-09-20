@@ -2,4 +2,25 @@
 <?eclipse version="3.2"?>
 <plugin>
 
+    <extension point="org.eclipse.core.runtime.applications" id="application" name="dbvr ce">
+        <application visible="true">
+            <run class="org.dbvr.cli.app.ce.CLIApplicationCE"/>
+        </application>
+    </extension>
+
+    <extension point="org.eclipse.core.runtime.products" id="product">
+        <product application="org.dbvr.cli.app.ce.application" description="DBeaver CLI community version" name="dbvr">
+            <property name="aboutText" value="DBeaver CLI community version"/>
+            <property name="copyright" value="© 2025 DBeaver Corp"/>
+            <property name="subTitle" value="DBeaver CLI community"/>
+        </product>
+    </extension>
+
+    <extension point="org.jkiss.dbeaver.application">
+        <application id="dbvr-ce"
+            family="CLI"
+            name="dbvr"
+            description="DBeaver CLI community"/>
+    </extension>
+
 </plugin>
