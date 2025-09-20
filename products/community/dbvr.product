@@ -2,7 +2,7 @@
 <?pde version="3.5"?>
 
 <product name="dbvr" uid="org.dbvr.app.ce.product" id="org.dbvr.app.ce.product"
-    application="org.dbvr.cli.app.ce.application" version="25.2.2.qualifier" useFeatures="true"
+    application="org.dbvr.app.ce.application" version="25.2.2.qualifier" useFeatures="true"
     includeLaunchers="true">
 
     <configIni use="default">
@@ -90,6 +90,7 @@
         <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1"/>
         <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="2"/>
         <plugin id="org.eclipse.equinox.event" autoStart="true" startLevel="2"/>
+        <plugin id="org.eclipse.core.runtime" autoStart="true" startLevel="2"/>
         <!-- This is important because simpleconfigurator conflicts with update.configurator -->
         <plugin id="org.eclipse.update.configurator" autoStart="false" startLevel="10"/>
     </configurations>
