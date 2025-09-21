@@ -4,8 +4,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.dbvr</groupId>
-    <artifactId>ce</artifactId>
+    <groupId>org.dbvr.ce</groupId>
+    <artifactId>main</artifactId>
     <packaging>pom</packaging>
     <name>dbvr community</name>
     <version>1.0.0-SNAPSHOT</version>
@@ -24,16 +24,7 @@
     <modules>
         <module>bundles</module>
         <module>features</module>
+        <module>products</module>
     </modules>
-
-    <profiles>
-        <profile>
-            <id>full-build</id>
-            <activation><property><name>!plain-api-server</name></property></activation>
-            <modules>
-                <module>products</module>
-            </modules>
-        </profile>
-    </profiles>
 
 </project>
