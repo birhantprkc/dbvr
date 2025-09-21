@@ -7,6 +7,5 @@ Bundle-Version: 25.2.2.qualifier
 Bundle-Release-Date: 20251006
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-21
-Require-Bundle: org.eclipse.core.runtime,
- org.dbvr.cli;visibility:=reexport
+Require-Bundle: org.dbvr.cli;visibility:=reexport
 Automatic-Module-Name: org.dbvr.app.ce
