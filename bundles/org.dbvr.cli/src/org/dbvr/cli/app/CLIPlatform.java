@@ -73,8 +73,7 @@ public class CLIPlatform extends BasePlatformImpl {
 
         // Register properties adapter
         try {
-            Path workspacePath = Path.of(Platform.getInstanceLocation().getURL().toURI());
-            this.workspace = new CLIWorkspace(this, workspacePath);
+            this.workspace = getApplication().createWorkspace(this);
             this.workspace.initializeProjects();
         } catch (Exception e) {
             throw new IllegalStateException("Cannot initialize CLI workspace", e);

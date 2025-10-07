@@ -16,41 +16,81 @@
  */
 package org.dbvr.cli.app;
 
+import org.apache.commons.cli.CommandLine;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.osgi.service.datalocation.Location;
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
+import org.jkiss.dbeaver.Log;
+import org.jkiss.dbeaver.model.DBConstants;
 import org.jkiss.dbeaver.model.app.DBPPlatform;
 import org.jkiss.dbeaver.model.impl.app.BaseApplicationImpl;
 import org.jkiss.dbeaver.model.impl.preferences.SimplePreferenceStore;
 import org.jkiss.dbeaver.model.preferences.DBPPreferenceStore;
+import org.jkiss.dbeaver.registry.BasePlatformImpl;
+import org.jkiss.dbeaver.runtime.DBWorkbench;
 import org.jkiss.dbeaver.runtime.ui.DBPPlatformUI;
 import org.jkiss.dbeaver.runtime.ui.console.ConsoleUserInterface;
+import org.jkiss.dbeaver.utils.RuntimeUtils;
 
+import java.net.URL;
 import java.nio.file.Path;
 
 /**
  * Base CLI application
  */
 public class CLIApplicationBase extends BaseApplicationImpl {
+    private static final Log log = Log.getLog(CLIApplicationBase.class);
+    protected final String WORKSPACE_DIR_CURRENT;
+
+    protected CLIApplicationBase() {
+
+        // Explicitly set UTF-8 as default file encoding
+        // In some places Eclipse reads this property directly.
+        //System.setProperty(StandardConstants.ENV_FILE_ENCODING, GeneralUtils.UTF8_ENCODING);
+
+        // Detect default workspace location
+        // Since 6.1.3 it is different for different OSes
+        // Windows: %AppData%/DBeaverData
+        // MacOS: ~/Library/DBeaverData
+        // Linux: $XDG_DATA_HOME/DBeaverData
+        String workingDirectory = RuntimeUtils.getWorkingDirectory(BasePlatformImpl.DBEAVER_DATA_DIR);
+
+        // Workspace dir
+        WORKSPACE_DIR_CURRENT = Path.of(workingDirectory, DEFAULT_WORKSPACE_FOLDER).toAbsolutePath().toString();
+        Log.setLogHandler(new VoidLogHandler());
+    }
 
     @NotNull
     @Override
     public Object start(IApplicationContext context) throws Exception {
-/*
-        Location instanceLoc = Platform.getInstanceLocation();
+        // Register core components
+        initializeApplicationServices();
 
-        CommandLine commandLine = DBeaverCommandLine.getInstance().getCommandLine();
-        String defaultHomePath = getDefaultInstanceLocation();
-        if (DBeaverCommandLine.getInstance()
-            .handleCommandLineAsClient(commandLine, defaultHomePath)
-            .getPostAction() == CliProcessResult.PostAction.SHUTDOWN
-        ) {
-            if (!Log.isQuietMode()) {
-                System.err.println("Commands processed. Exit " + GeneralUtils.getProductName() + ".");
+        CommandLine commandLine = DBVRCommandLine.getInstance().getCommandLine();
+        Location instanceLoc = Platform.getInstanceLocation();
+        try {
+            if (!instanceLoc.isSet()) { // always false?
+                URL wsLocationURL = new URL(
+                    "file",  //$NON-NLS-1$
+                    null,
+                    WORKSPACE_DIR_CURRENT
+                );
+                instanceLoc.set(wsLocationURL, false);
             }
-            return IApplication.EXIT_OK;
+        } catch (Exception e) {
+            log.error("Error setting workspace location to " + WORKSPACE_DIR_CURRENT, e);
+            throw e;
         }
-*/
+        DBWorkbench.getPlatform();
+        DBVRCommandLine.getInstance().executeCommandLineCommands(
+            commandLine,
+            null,
+            false,
+            true
+        );
+
 
         return EXIT_OK;
     }
@@ -63,13 +103,13 @@ public class CLIApplicationBase extends BaseApplicationImpl {
     @Nullable
     @Override
     public String getDefaultProjectName() {
-        return null;
+        return DBConstants.DEFAULT_PROJECT_NAME;
     }
 
     @Nullable
     @Override
     public Path getDefaultWorkingFolder() {
-        return null;
+        return Path.of(WORKSPACE_DIR_CURRENT);
     }
 
     @NotNull
@@ -84,17 +124,12 @@ public class CLIApplicationBase extends BaseApplicationImpl {
     }
 
     @Override
-    public boolean isStandalone() {
+    public boolean isEnvironmentVariablesAccessible() {
         return true;
     }
 
     @Override
     public boolean isHeadlessMode() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnvironmentVariablesAccessible() {
         return true;
     }
 
@@ -108,4 +143,7 @@ public class CLIApplicationBase extends BaseApplicationImpl {
         };
     }
 
+    public CLIWorkspace createWorkspace(@NotNull CLIPlatform cliPlatform) {
+        return new CLIWorkspace(cliPlatform, Path.of(WORKSPACE_DIR_CURRENT));
+    }
 }

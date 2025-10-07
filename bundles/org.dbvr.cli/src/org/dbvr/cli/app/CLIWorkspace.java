@@ -18,20 +18,30 @@ package org.dbvr.cli.app;
 
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
+import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.app.DBPPlatform;
 import org.jkiss.dbeaver.model.app.DBPProject;
+import org.jkiss.dbeaver.model.impl.app.BaseProjectImpl;
 import org.jkiss.dbeaver.model.impl.app.BaseWorkspaceImpl;
+import org.jkiss.dbeaver.registry.project.LocalProjectImpl;
 import org.jkiss.dbeaver.runtime.DBWorkbench;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * CLI workspace
  */
 public class CLIWorkspace extends BaseWorkspaceImpl {
+    private static final Log log = Log.getLog(CLIWorkspace.class);
 
-    private DBPProject activeProject;
+    private final List<DBPProject> projects = new ArrayList<>();
 
     public CLIWorkspace(@NotNull DBPPlatform platform, @NotNull Path workspacePath) {
         super(platform, workspacePath);
@@ -65,17 +75,55 @@ public class CLIWorkspace extends BaseWorkspaceImpl {
     @Nullable
     @Override
     public DBPProject getProject(@NotNull String projectName) {
-        return null;
+        return projects.stream()
+            .filter(
+                project -> project.getName().equals(projectName)
+            )
+            .findFirst()
+            .orElse(null);
     }
 
     @Nullable
     @Override
     public DBPProject getProjectById(@NotNull String projectId) {
-        return null;
+        return projects.stream()
+            .filter(
+                project -> project.getId().equals(projectId)
+            )
+            .findFirst()
+            .orElse(null);
     }
 
     @Override
     public void initializeProjects() {
+        List<Path> projectPaths = new ArrayList<>();
+        try {
+            Files.walkFileTree(getAbsolutePath(), new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    if (attrs.isSymbolicLink()) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+
+                    boolean hasDbeaver = Files.exists(dir.resolve(DBPProject.METADATA_FOLDER));
+                    boolean hasProjectFile = Files.exists(dir.resolve(BaseProjectImpl.PROJECT_FILE));
+
+                    if (hasDbeaver || hasProjectFile) {
+                        projectPaths.add(dir.toAbsolutePath().normalize());
+                        // folder already marked as project - skip subfolders
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (Exception e) {
+            log.error("Can't load cli workspace projects", e);
+        }
+        for (Path projectPath : projectPaths) {
+            projects.add(new LocalProjectImpl(this, getAuthContext(), projectPath));
+        }
+
+        activeProject = getProject(platform.getApplication().getDefaultProjectName());
         // noop
     }
 
