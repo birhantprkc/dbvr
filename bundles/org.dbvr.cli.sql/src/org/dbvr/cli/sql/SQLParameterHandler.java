@@ -16,14 +16,18 @@
  */
 package org.dbvr.cli.sql;
 
-import org.apache.commons.cli.CommandLine;
+
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
-import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.DBPDataSource;
 import org.jkiss.dbeaver.model.DBPDataSourceContainer;
-import org.jkiss.dbeaver.model.cli.*;
+import org.jkiss.dbeaver.model.cli.CLIConstants;
+import org.jkiss.dbeaver.model.cli.CLIException;
+import org.jkiss.dbeaver.model.cli.CLIUtils;
+import org.jkiss.dbeaver.model.cli.model.CommandLineWithAuth;
+import org.jkiss.dbeaver.model.cli.model.option.InputFileOption;
+import org.jkiss.dbeaver.model.cli.model.option.OutputFileOption;
 import org.jkiss.dbeaver.model.exec.DBCExecutionContext;
 import org.jkiss.dbeaver.model.exec.DBCStatistics;
 import org.jkiss.dbeaver.model.exec.output.DBCOutputSeverity;
@@ -47,6 +51,7 @@ import org.jkiss.dbeaver.tools.transfer.stream.IStreamDataExporter;
 import org.jkiss.dbeaver.tools.transfer.stream.StreamConsumerSettings;
 import org.jkiss.dbeaver.tools.transfer.stream.StreamTransferConsumer;
 import org.jkiss.utils.CommonUtils;
+import picocli.CommandLine;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,30 +60,41 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
-public class SQLParameterHandler implements ICommandLineParameterHandler {
+@CommandLine.Command(name = "sql", description = "Execute SQL script", mixinStandardHelpOptions = true)
+public class SQLParameterHandler extends CommandLineWithAuth {
     private static final Log log = Log.getLog(SQLParameterHandler.class);
-    private static final String DEFAULT_FORMAT = "csv";
 
-    private static final String CONTEXT_PARAM_OUTPUT_FORMAT_PARAMETERS = "output-format-parameters";
-    private static final String CONTEXT_PARAM_OUTPUT_FORMAT = "outputFormat";
-    private static final String CONTEXT_PARAM_LIMIT = "limit";
+    @CommandLine.Option(names = {"-query"},
+        description = "SQL query to execute. If not specified then read from stdin or input file")
+    private String query;
+
+    @CommandLine.Mixin
+    private InputFileOption inputFileOption;
+
+    @CommandLine.Mixin
+    private OutputFileOption outputFileOption;
+
+    @CommandLine.Mixin
+    private DataTransferOptions dataTransferOptions;
+
+
+    @CommandLine.Mixin
+    private OpenConnectionOptions connectionOptions;
 
     @Override
-    public void handleParameter(
-        @NotNull CommandLine commandLine,
-        @NotNull String name,
-        @Nullable String value,
-        @NotNull CommandLineContext context
-    ) throws DBException {
-        String sqlQuery = value;
+    public void run() {
+        super.run();
+        CLIConnectionUtils.connect(connectionOptions, context(), log);
+
+        String sqlQuery = query;
         if (CommonUtils.isEmpty(sqlQuery)) {
-            sqlQuery = CLIUtils.readValueFromFileOrSystemIn(context);
+            sqlQuery = CLIUtils.readValueFromFileOrSystemIn(inputFileOption);
         }
         if (CommonUtils.isEmpty(sqlQuery)) {
             throw new CLIException("SQL query is empty", CLIConstants.EXIT_CODE_ILLEGAL_ARGUMENTS);
         }
 
-        DBPDataSourceContainer dataSourceContainer = context.getContextParameter(DBPDataSourceContainer.class.getName());
+        DBPDataSourceContainer dataSourceContainer = context().getContextParameter(DBPDataSourceContainer.class.getName());
         if (dataSourceContainer == null) {
             throw new CLIException(
                 "No connection specified",
@@ -86,12 +102,10 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
             );
         }
 
-        executeScript(commandLine, context, dataSourceContainer, sqlQuery);
+        executeScript(dataSourceContainer, sqlQuery);
     }
 
     private void executeScript(
-        @NotNull CommandLine commandLine,
-        @NotNull CommandLineContext context,
         @NotNull DBPDataSourceContainer dataSourceContainer,
         @NotNull String sqlQuery
     ) throws CLIException {
@@ -105,10 +119,7 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
         List<SQLScriptElement> scriptElements = SQLScriptParser.parseScript(executionContext.getDataSource(), sqlQuery);
         SQLScriptContext scriptContext = new SQLScriptContext(null, () -> executionContext, null, new LogOutputWriter(), null);
 
-        String outputFormat =
-            CommonUtils.isEmpty((String) context.getContextParameter(CONTEXT_PARAM_OUTPUT_FORMAT))
-                ? DEFAULT_FORMAT
-                : context.getContextParameter(CONTEXT_PARAM_OUTPUT_FORMAT);
+        String outputFormat = dataTransferOptions.getOutputFormat();
 
         if (CommonUtils.isEmpty(outputFormat)) {
             throw new CLIException("Can't determine output format: '" + outputFormat + "'", CLIConstants.EXIT_CODE_ILLEGAL_ARGUMENTS);
@@ -135,8 +146,8 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
         }
 
         Map<String, Object> processorProperties = new HashMap<>();
-        if (commandLine.getOptionValue(CONTEXT_PARAM_OUTPUT_FORMAT_PARAMETERS) != null) {
-            String cutomPropsString = commandLine.getOptionValue(CONTEXT_PARAM_OUTPUT_FORMAT_PARAMETERS);
+        if (CommonUtils.isNotEmpty(dataTransferOptions.getOutputFormatParameters())) {
+            String cutomPropsString = dataTransferOptions.getOutputFormatParameters();
             if (CommonUtils.isNotEmpty(cutomPropsString)) {
                 Arrays.stream(cutomPropsString.split(","))
                     .filter(CommonUtils::isNotEmpty)
@@ -162,16 +173,14 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
             }
         }
 
-        Path outputFile = context.getContextParameter(OutputFileParameterHandler.OUTPUT_FILE);
+        Path outputFile = outputFileOption.getOutputFile();
 
         DataSourceContextProvider dataSourceContextProvider = new DataSourceContextProvider(dataSource);
-        StreamConsumerSettings settings = prepareSettings(commandLine, context);
+        StreamConsumerSettings settings = prepareSettings();
 
         boolean first = true;
-        int limit = 0;
-        if (context.getContextParameter(CONTEXT_PARAM_LIMIT) != null) {
-            limit = CommonUtils.toInt(context.getContextParameter(CONTEXT_PARAM_LIMIT), 0);
-        }
+        int limit = dataTransferOptions.getLimit();
+
         for (var script : scriptElements) {
             if (!(script instanceof SQLQuery query)) {
                 log.debug("Skip non-query script element: " + script.getText());
@@ -226,7 +235,7 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
 
                 if (out instanceof ByteArrayOutputStream byteArrayOutputStream) {
                     String result = byteArrayOutputStream.toString(settings.getOutputEncoding());
-                    context.addResult(result);
+                    context().addResult(result);
                 }
             } catch (Exception e) {
                 throw new CLIException("Failed to execute script", e, CLIConstants.EXIT_CODE_ERROR);
@@ -235,7 +244,7 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
 
     }
 
-    private StreamConsumerSettings prepareSettings(CommandLine commandLine, CommandLineContext context) {
+    private StreamConsumerSettings prepareSettings() {
         StreamConsumerSettings settings = new StreamConsumerSettings();
         settings.setOutputClipboard(false);
         settings.setOutputEncodingBOM(false);
@@ -255,5 +264,6 @@ public class SQLParameterHandler implements ICommandLineParameterHandler {
 
         }
     }
+
 
 }
