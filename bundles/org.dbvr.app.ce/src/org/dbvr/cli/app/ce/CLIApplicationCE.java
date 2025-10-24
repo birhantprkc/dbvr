@@ -28,7 +28,6 @@ public class CLIApplicationCE extends CLIApplicationBase {
     @NotNull
     @Override
     public Object start(IApplicationContext context) throws Exception {
-        System.out.println("DBeaver CLI");
         Object result = super.start(context);
         if (result == EXIT_OK) {
 
