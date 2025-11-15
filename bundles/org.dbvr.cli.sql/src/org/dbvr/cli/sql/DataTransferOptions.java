@@ -30,7 +30,7 @@ public class DataTransferOptions {
     private String limit = "1000";
 
     @NotNull
-    @CommandLine.Option(names = {"-format", "--output-format"},
+    @CommandLine.Option(names = {"-f", "--output-format"},
         arity = "1",
         description = "Write the execution result in a specific format (csv, xml, etc. csv by default)",
         defaultValue = "txt")
