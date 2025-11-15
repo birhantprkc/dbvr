@@ -55,7 +55,6 @@ import picocli.CommandLine;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -87,7 +86,7 @@ public class SQLParameterHandler extends CommandLineWithAuth {
     @Override
     public void run() {
         super.run();
-        CLIConnectionUtils.connect(connectionOptions, getContext(), log);
+        CLIConnectionUtils.connect(connectionOptions, context(), log);
 
         String sqlQuery = query;
         if (CommonUtils.isEmpty(sqlQuery)) {
@@ -97,7 +96,7 @@ public class SQLParameterHandler extends CommandLineWithAuth {
             throw new CLIException("SQL query is empty", CLIConstants.EXIT_CODE_ILLEGAL_ARGUMENTS);
         }
 
-        DBPDataSourceContainer dataSourceContainer = getContext().getContextParameter(DBPDataSourceContainer.class.getName());
+        DBPDataSourceContainer dataSourceContainer = context().getContextParameter(DBPDataSourceContainer.class.getName());
         if (dataSourceContainer == null) {
             throw new CLIException(
                 "No connection specified",
@@ -120,25 +119,15 @@ public class SQLParameterHandler extends CommandLineWithAuth {
         DBCExecutionContext executionContext = dataSource.getDefaultInstance().getDefaultContext(monitor, false);
 
         List<SQLScriptElement> scriptElements = SQLScriptParser.parseScript(executionContext.getDataSource(), sqlQuery);
-        SQLScriptContext scriptContext = new SQLScriptContext(
-            null,
-            () -> executionContext,
-            null,
-            new LogOutputWriter(),
-            null
-        );
+        SQLScriptContext scriptContext = new SQLScriptContext(null, () -> executionContext, null, new LogOutputWriter(), null);
 
         String outputFormat = dataTransferOptions.getOutputFormat();
 
         if (CommonUtils.isEmpty(outputFormat)) {
             throw new CLIException("Can't determine output format: '" + outputFormat + "'", CLIConstants.EXIT_CODE_ILLEGAL_ARGUMENTS);
         }
-        List<DataTransferProcessorDescriptor> processors = DataTransferRegistry.getInstance()
-            .getAvailableProcessors(StreamTransferConsumer.class, DBSEntity.class);
-        if (CommonUtils.isEmpty(processors)) {
-            throw new CLIException("No output processors installed", CLIConstants.EXIT_CODE_ERROR);
-        }
-        DataTransferProcessorDescriptor processorDescriptor = processors
+        DataTransferProcessorDescriptor processorDescriptor = DataTransferRegistry.getInstance()
+            .getAvailableProcessors(StreamTransferConsumer.class, DBSEntity.class)
             .stream()
             .filter(p -> p.getProcessorFileExtension().equals(outputFormat))
             .findFirst()
@@ -158,84 +147,6 @@ public class SQLParameterHandler extends CommandLineWithAuth {
             );
         }
 
-        Map<String, Object> processorProperties = collectProcessorProperties(processorDescriptor);
-
-        Path outputFile = outputFileOption.getOutputFile();
-
-        DataSourceContextProvider dataSourceContextProvider = new DataSourceContextProvider(dataSource);
-        StreamConsumerSettings settings = prepareSettings();
-
-        boolean first = true;
-        long offset = dataTransferOptions.getOffset();
-        long limit = dataTransferOptions.getLimit();
-
-        for (SQLScriptElement script : scriptElements) {
-            if (!(script instanceof SQLQuery q)) {
-                log.debug("Skip non-query script element: " + script.getText());
-                continue;
-            }
-
-            try (OutputStream out = outputFile == null ? new ByteArrayOutputStream() : new BufferedOutputStream(
-                    Files.newOutputStream(
-                        outputFile,
-                        first ? StandardOpenOption.CREATE : StandardOpenOption.APPEND
-                    ))
-            ) {
-                first = false;
-                StreamTransferConsumer consumer = new StreamTransferConsumer();
-                SQLQueryDataContainer sqlQueryDataContainer = new SQLQueryDataContainer(
-                    dataSourceContextProvider, q, scriptContext, log
-                );
-                consumer.initTransfer(
-                    sqlQueryDataContainer,
-                    settings,
-                    new IDataTransferConsumer.TransferParameters(
-                        processorDescriptor.isBinaryFormat(),
-                        processorDescriptor.isHTMLFormat(),
-                        out
-                    ),
-                    streamDataExporter,
-                    processorProperties,
-                    dataSourceContainer.getProject()
-                );
-
-                SQLScriptProcessor scriptProcessor = new SQLScriptProcessor(
-                    executionContext,
-                    List.of(q),
-                    scriptContext,
-                    consumer,
-                    log
-                );
-                if (offset > 0) {
-                    scriptProcessor.setOffset(offset);
-                }
-                if (limit > 0) {
-                    scriptProcessor.setMaxRows(limit);
-                }
-                scriptProcessor.runScript(monitor);
-
-                consumer.finishTransfer(monitor, false);
-                DBCStatistics statistics = scriptProcessor.getTotalStatistics();
-
-                if (statistics.getRowsFetched() <= 0 && statistics.getRowsUpdated() > 0) {
-                    out.write(("Rows updated: " + statistics.getRowsUpdated() + "\n").getBytes(settings.getOutputEncoding()));
-                } else if (statistics.getRowsFetched() <= 0 && statistics.getRowsUpdated() <= 0) {
-                    out.write("Success\n".getBytes(settings.getOutputEncoding()));
-                }
-
-                if (out instanceof ByteArrayOutputStream baos) {
-                    String result = baos.toString(settings.getOutputEncoding());
-                    getContext().addResult(result);
-                }
-            } catch (Exception e) {
-                throw new CLIException("Failed to execute script", e, CLIConstants.EXIT_CODE_ERROR);
-            }
-        }
-
-    }
-
-    @NotNull
-    private Map<String, Object> collectProcessorProperties(@NotNull DataTransferProcessorDescriptor processorDescriptor) {
         Map<String, Object> processorProperties = new HashMap<>();
         if (CommonUtils.isNotEmpty(dataTransferOptions.getOutputFormatParameters())) {
             String cutomPropsString = dataTransferOptions.getOutputFormatParameters();
@@ -263,7 +174,76 @@ public class SQLParameterHandler extends CommandLineWithAuth {
                 processorProperties.put(prop.getId(), prop.getDefaultValue());
             }
         }
-        return processorProperties;
+
+        Path outputFile = outputFileOption.getOutputFile();
+
+        DataSourceContextProvider dataSourceContextProvider = new DataSourceContextProvider(dataSource);
+        StreamConsumerSettings settings = prepareSettings();
+
+        boolean first = true;
+        int limit = dataTransferOptions.getLimit();
+
+        for (var script : scriptElements) {
+            if (!(script instanceof SQLQuery query)) {
+                log.debug("Skip non-query script element: " + script.getText());
+                continue;
+            }
+
+            try (
+                var out = outputFile == null ? new ByteArrayOutputStream() : new BufferedOutputStream(
+                    Files.newOutputStream(
+                        outputFile,
+                        first ? StandardOpenOption.CREATE : StandardOpenOption.APPEND
+                    ))
+            ) {
+                first = false;
+                StreamTransferConsumer consumer = new StreamTransferConsumer();
+                SQLQueryDataContainer sqlQueryDataContainer = new SQLQueryDataContainer(
+                    dataSourceContextProvider, query, scriptContext, log
+                );
+                consumer.initTransfer(
+                    sqlQueryDataContainer,
+                    settings,
+                    new IDataTransferConsumer.TransferParameters(
+                        processorDescriptor.isBinaryFormat(),
+                        processorDescriptor.isHTMLFormat(),
+                        out
+                    ),
+                    streamDataExporter,
+                    processorProperties,
+                    dataSourceContainer.getProject()
+                );
+
+                SQLScriptProcessor scriptProcessor = new SQLScriptProcessor(
+                    executionContext,
+                    List.of(query),
+                    scriptContext,
+                    consumer,
+                    log
+                );
+                if (limit > 0) {
+                    scriptProcessor.setMaxRows(limit);
+                }
+                scriptProcessor.runScript(monitor);
+
+                consumer.finishTransfer(monitor, false);
+                DBCStatistics statistics = scriptProcessor.getTotalStatistics();
+
+                if (statistics.getRowsFetched() <= 0 && statistics.getRowsUpdated() > 0) {
+                    out.write(("Rows updated: " + statistics.getRowsUpdated() + "\n").getBytes(settings.getOutputEncoding()));
+                } else if (statistics.getRowsFetched() <= 0 && statistics.getRowsUpdated() <= 0) {
+                    out.write("Success\n".getBytes(settings.getOutputEncoding()));
+                }
+
+                if (out instanceof ByteArrayOutputStream byteArrayOutputStream) {
+                    String result = byteArrayOutputStream.toString(settings.getOutputEncoding());
+                    context().addResult(result);
+                }
+            } catch (Exception e) {
+                throw new CLIException("Failed to execute script", e, CLIConstants.EXIT_CODE_ERROR);
+            }
+        }
+
     }
 
     private StreamConsumerSettings prepareSettings() {
