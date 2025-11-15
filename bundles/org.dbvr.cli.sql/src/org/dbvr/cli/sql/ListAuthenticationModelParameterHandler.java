@@ -54,8 +54,8 @@ public class ListAuthenticationModelParameterHandler extends AbstractCommandLine
                 outBuilder.append(helpText);
             }
         }
-        context().addResult(outBuilder.toString());
-        context().setPostAction(CLIProcessResult.PostAction.SHUTDOWN);
+        getContext().addResult(outBuilder.toString());
+        getContext().setPostAction(CLIProcessResult.PostAction.SHUTDOWN);
     }
 
     private static @NotNull String getHelpText(DBPPropertyDescriptor property) {
