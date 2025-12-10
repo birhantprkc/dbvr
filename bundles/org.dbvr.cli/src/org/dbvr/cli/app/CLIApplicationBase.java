@@ -26,6 +26,7 @@ import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.DBConstants;
 import org.jkiss.dbeaver.model.app.DBPPlatform;
 import org.jkiss.dbeaver.model.cli.CLIProcessResult;
+import org.jkiss.dbeaver.model.cli.command.AbstractTopLevelCommand;
 import org.jkiss.dbeaver.model.impl.app.BaseApplicationImpl;
 import org.jkiss.dbeaver.model.impl.preferences.SimplePreferenceStore;
 import org.jkiss.dbeaver.model.preferences.DBPPreferenceStore;
@@ -34,6 +35,7 @@ import org.jkiss.dbeaver.runtime.DBWorkbench;
 import org.jkiss.dbeaver.runtime.ui.DBPPlatformUI;
 import org.jkiss.dbeaver.runtime.ui.console.ConsoleUserInterface;
 import org.jkiss.dbeaver.utils.RuntimeUtils;
+import org.jkiss.utils.ArrayUtils;
 import org.jkiss.utils.CommonUtils;
 
 import java.net.URL;
@@ -45,6 +47,8 @@ import java.nio.file.Path;
 public class CLIApplicationBase extends BaseApplicationImpl {
     private static final Log log = Log.getLog(CLIApplicationBase.class);
     protected final Path WORKSPACE_DIR_CURRENT;
+    private boolean started = false;
+    private static final String[] DEFAULT_ARGS = new String[] {AbstractTopLevelCommand.HELP_OPTION};
 
     private final DBPPreferenceStore preferenceStore = new SimplePreferenceStore() {
         @Override
@@ -89,19 +93,28 @@ public class CLIApplicationBase extends BaseApplicationImpl {
         }
         DBWorkbench.getPlatform();
         configureApplication();
-        CLICommandLine commandLine = createCommandLine();
-        CLIProcessResult processResult = createCommandLine().executeCommandLineCommands(
-            null,
-            false,
-            false,
-            Platform.getApplicationArgs()
-        );
+        started = true;
+        CLIProcessResult processResult = executeCommandLine(Platform.getApplicationArgs());
         if (!CommonUtils.isEmpty(processResult.getOutput())) {
             for (String res : processResult.getOutput()) {
                 System.out.println(res);
             }
         }
         return EXIT_OK;
+    }
+
+    public CLIProcessResult executeCommandLine(@NotNull String[] args) throws Exception {
+        CLICommandLine commandLine = createCommandLine();
+        String[] appArgs = commandLine.preprocessCommandLine(args);
+        if (ArrayUtils.isEmpty(appArgs)) {
+            appArgs = DEFAULT_ARGS;
+        }
+        return commandLine.executeCommandLineCommands(
+            null,
+            false,
+            false,
+            appArgs
+        );
     }
 
     @NotNull
@@ -159,5 +172,9 @@ public class CLIApplicationBase extends BaseApplicationImpl {
     @NotNull
     public CLIWorkspace createWorkspace(@NotNull CLIPlatform cliPlatform) {
         return new CLIWorkspace(cliPlatform, WORKSPACE_DIR_CURRENT);
+    }
+
+    public synchronized boolean isStarted() {
+        return started;
     }
 }
