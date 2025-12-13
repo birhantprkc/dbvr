@@ -22,6 +22,7 @@ import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.osgi.service.datalocation.Location;
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
+import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.DBConstants;
 import org.jkiss.dbeaver.model.app.DBPPlatform;
@@ -94,27 +95,38 @@ public class CLIApplicationBase extends BaseApplicationImpl {
         DBWorkbench.getPlatform();
         configureApplication();
         started = true;
-        CLIProcessResult processResult = executeCommandLine(Platform.getApplicationArgs());
-        if (!CommonUtils.isEmpty(processResult.getOutput())) {
-            for (String res : processResult.getOutput()) {
-                System.out.println(res);
+        try {
+            CLIProcessResult processResult = executeCommandLine(Platform.getApplicationArgs());
+            var out = processResult.getPostAction() == CLIProcessResult.PostAction.ERROR
+                ? System.err
+                : System.out;
+            if (!CommonUtils.isEmpty(processResult.getOutput())) {
+                for (String res : processResult.getOutput()) {
+                    out.println(res);
+                }
             }
+        } catch (DBException e) {
+            System.err.println("Error: " + e.getMessage());
         }
         return EXIT_OK;
     }
 
-    public CLIProcessResult executeCommandLine(@NotNull String[] args) throws Exception {
+    public CLIProcessResult executeCommandLine(@NotNull String[] args) throws DBException {
         CLICommandLine commandLine = createCommandLine();
         String[] appArgs = commandLine.preprocessCommandLine(args);
         if (ArrayUtils.isEmpty(appArgs)) {
             appArgs = DEFAULT_ARGS;
         }
-        return commandLine.executeCommandLineCommands(
-            null,
-            false,
-            false,
-            appArgs
-        );
+        try {
+            return commandLine.executeCommandLineCommands(
+                null,
+                false,
+                false,
+                appArgs
+            );
+        } catch (Exception e) {
+            throw new DBException("Error executing command line: " + e.getMessage(), e);
+        }
     }
 
     @NotNull
