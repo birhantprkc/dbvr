@@ -1,6 +1,6 @@
 /*
  * DBeaver - Universal Database Manager
- * Copyright (C) 2010-2025 DBeaver Corp and others
+ * Copyright (C) 2010-2026 DBeaver Corp and others
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@ import org.jkiss.dbeaver.model.cli.CLIConstants;
 import org.jkiss.dbeaver.model.cli.CLIException;
 import org.jkiss.dbeaver.model.cli.CLIUtils;
 import org.jkiss.dbeaver.model.cli.model.CommandLineWithAuth;
-import org.jkiss.dbeaver.model.cli.model.option.InputFileOption;
-import org.jkiss.dbeaver.model.cli.model.option.OutputFileOption;
+import org.jkiss.dbeaver.model.cli.model.option.*;
 import org.jkiss.dbeaver.model.exec.DBCExecutionContext;
 import org.jkiss.dbeaver.model.exec.DBCStatistics;
 import org.jkiss.dbeaver.model.exec.output.DBCOutputSeverity;
@@ -80,12 +79,39 @@ public class SQLParameterHandler extends CommandLineWithAuth {
     private DataTransferOptions dataTransferOptions;
 
     @CommandLine.Mixin
-    private OpenConnectionOptions connectionOptions;
+    private ProjectOption projectOption;
+
+    @CommandLine.Mixin
+    private DataSourceAuthOptions authOptions;
+
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    private CreateOrFindConnection connectionOptions;
+
+    private static class CreateOrFindConnection {
+        @CommandLine.ArgGroup(
+            exclusive = false
+        )
+        private CreateDataSourceOptions tempDataSourceOptions;
+
+        @CommandLine.Option(names = "--connection", arity = "1", description = "Connection ID or name")
+        private String existConnectionIdOrName;
+
+        @CommandLine.Option(names = "--connection-spec", arity = "1", description = "Connection specification")
+        private String connectionSpec;
+    }
 
     @Override
     public void run() throws CLIException {
         super.run();
-        CLIConnectionUtils.connect(connectionOptions, context(), log);
+        CLIConnectionUtils.connect(
+            connectionOptions.existConnectionIdOrName,
+            connectionOptions.tempDataSourceOptions,
+            connectionOptions.connectionSpec,
+            authOptions,
+            projectOption.getProjectIdOrName(),
+            context(),
+            log
+        );
 
         String sqlQuery = query;
         if (CommonUtils.isEmpty(sqlQuery)) {
@@ -193,7 +219,6 @@ public class SQLParameterHandler extends CommandLineWithAuth {
         DataSourceContextProvider dataSourceContextProvider = new DataSourceContextProvider(dataSource);
         StreamConsumerSettings settings = prepareSettings();
 
-        boolean first = true;
         long offset = dataTransferOptions.getOffset();
         long limit = dataTransferOptions.getLimit();
         try (

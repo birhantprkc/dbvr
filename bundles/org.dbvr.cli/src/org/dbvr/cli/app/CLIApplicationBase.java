@@ -1,6 +1,6 @@
 /*
  * DBeaver - Universal Database Manager
- * Copyright (C) 2010-2025 DBeaver Corp and others
+ * Copyright (C) 2010-2026 DBeaver Corp and others
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,9 +92,14 @@ public class CLIApplicationBase extends BaseApplicationImpl {
             log.error("Error setting workspace location to " + WORKSPACE_DIR_CURRENT, e);
             throw e;
         }
+        var cfg = System.currentTimeMillis();
         DBWorkbench.getPlatform();
+        System.out.println("Application initialized in " + (System.currentTimeMillis() - cfg) + " ms");
+
         configureApplication();
         started = true;
+        var startupTime = System.currentTimeMillis();
+
         try {
             CLIProcessResult processResult = executeCommandLine(Platform.getApplicationArgs());
             var out = processResult.getPostAction() == CLIProcessResult.PostAction.ERROR
@@ -108,6 +113,8 @@ public class CLIApplicationBase extends BaseApplicationImpl {
         } catch (DBException e) {
             System.err.println("Error: " + e.getMessage());
         }
+        System.out.println("Command line process finished in " +
+            (System.currentTimeMillis() - startupTime) + " ms");
         return EXIT_OK;
     }
 
