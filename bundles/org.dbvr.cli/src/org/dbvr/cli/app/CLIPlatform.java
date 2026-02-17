@@ -62,7 +62,9 @@ public class CLIPlatform extends BasePlatformImpl {
         try {
             Path installPath = RuntimeUtils.getLocalPathFromURL(Platform.getInstallLocation().getURL());
 
-            this.defaultCertificateStorage = new DefaultCertificateStorage(installPath.resolve(DBConstants.CERTIFICATE_STORAGE_FOLDER));
+            this.defaultCertificateStorage = new DefaultCertificateStorage(
+                this,
+                installPath.resolve(DBConstants.CERTIFICATE_STORAGE_FOLDER));
         } catch (IOException e) {
             log.debug(e);
         }
