@@ -1,6 +1,6 @@
 /*
  * DBeaver - Universal Database Manager
- * Copyright (C) 2010-2025 DBeaver Corp and others
+ * Copyright (C) 2010-2026 DBeaver Corp and others
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,9 @@ public class CLIPlatform extends BasePlatformImpl {
             Path installPath = RuntimeUtils.getLocalPathFromURL(Platform.getInstallLocation().getURL());
 
             this.tempFolder = installPath.resolve("temp");
-            this.defaultCertificateStorage = new DefaultCertificateStorage(installPath.resolve(DBConstants.CERTIFICATE_STORAGE_FOLDER));
+            this.defaultCertificateStorage = new DefaultCertificateStorage(
+                this,
+                installPath.resolve(DBConstants.CERTIFICATE_STORAGE_FOLDER));
         } catch (IOException e) {
             log.debug(e);
         }
