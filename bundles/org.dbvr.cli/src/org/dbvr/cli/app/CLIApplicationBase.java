@@ -41,7 +41,6 @@ import org.jkiss.utils.CommonUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 /**
  * Base CLI application
@@ -85,13 +84,7 @@ public class CLIApplicationBase extends BaseApplicationImpl {
                 instanceLoc.set(wsLocationURL, false);
             } else {
                 var locationPath = Path.of(instanceLoc.getURL().toURI());
-                //                var locationDefaultPath = Path.of(instanceLoc.getDefault().toURI());
                 Path defPath = instanceLoc.getDefault() == null ? null : Path.of(instanceLoc.getDefault().toURI());
-                System.out.println("AAAA Def path" + defPath);
-                System.out.println("AAAAA Location path" + locationPath);
-                //                System.out.println("Def location path eq " + locationDefaultPath.equals(locationPath));
-                System.out.println("args 1 " + Arrays.toString(Platform.getCommandLineArgs()));
-                System.out.println("args 2 " + Arrays.toString(Platform.getApplicationArgs()));
                 if (!locationPath.equals(defPath)) {
                     workspaceDirCurrent = locationPath;
                 }
