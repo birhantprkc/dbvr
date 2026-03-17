@@ -30,7 +30,8 @@ import picocli.CommandLine;
         UpdateDataSource.class,
         DeleteDataSource.class,
         ListDataSource.class,
-        ViewDataSource.class
+        ViewDataSource.class,
+        MoveDataSource.class
     }
 )
 public class DataSourceManagementHandler extends CLIAbstractSubcommand {
