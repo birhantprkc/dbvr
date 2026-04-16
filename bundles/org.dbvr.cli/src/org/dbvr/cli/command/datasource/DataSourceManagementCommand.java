@@ -14,37 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.dbvr.cli.command.project;
+package org.dbvr.cli.command.datasource;
 
 import org.jkiss.dbeaver.model.cli.CLIAbstractSubcommand;
 import org.jkiss.dbeaver.model.cli.CLIException;
 import org.jkiss.dbeaver.model.cli.CLIProcessResult;
+import org.jkiss.dbeaver.model.cli.CLIUtils;
 import picocli.CommandLine;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 @CommandLine.Command(
-    name = "project",
-    description = "Project management commands",
+    name = DataSourceManagementCommand.COMMAND_DATASOURCE,
+    description = "Datasource management",
     subcommands = {
-        ListProjects.class,
-        CreateProject.class,
-        DeleteProject.class,
-        RenameProject.class,
-        SetDefaultProject.class
+        CreateDatasource.class,
+        UpdateDataSource.class,
+        DeleteDataSource.class,
+        ListDataSource.class,
+        ViewDataSource.class,
+        MoveDataSource.class
     }
 )
-public class ProjectManagementHandler extends CLIAbstractSubcommand {
-    @CommandLine.Spec
-    CommandLine.Model.CommandSpec spec;
+public class DataSourceManagementCommand extends CLIAbstractSubcommand {
+    public static final String COMMAND_DATASOURCE = "datasource";
 
     @Override
     public void run() throws CLIException {
         if (spec.commandLine().getParseResult().subcommand() == null) {
-            StringWriter writer = new StringWriter();
-            spec.commandLine().usage(new PrintWriter(writer));
-            context().addResult(writer.toString());
+            String helpMessage = CLIUtils.getHelpFromCommand(spec);
+            context().addResult(helpMessage);
             context().setPostAction(CLIProcessResult.PostAction.SHUTDOWN);
         }
     }
