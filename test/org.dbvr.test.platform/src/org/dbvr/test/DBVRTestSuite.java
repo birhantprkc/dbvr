@@ -31,7 +31,8 @@ import org.junit.runners.Suite;
     DataSourceManagementTest.class,
     ProjectManagementTest.class,
     AuthModelsTest.class,
-    InjectTest.class
+    InjectTest.class,
+    MetaLocalCommandTest.class
 })
 public class DBVRTestSuite {
     private static CLIApplicationCE applicationCE;
