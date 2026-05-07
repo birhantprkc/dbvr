@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 DBeaver CLI (`dbvr`) is a command-line interface for working with databases.
-It can act as as astdalone CLI application or with conjunction with DBeaver and CloudBeaver. 
+It can act as as standalone CLI application or with conjunction with DBeaver and CloudBeaver. 
 It provides a scriptable way to manage database projects and data sources, inspect metadata, and execute SQL from the terminal.
 
 ## Why DBeaver CLI is useful
