@@ -118,20 +118,20 @@ dbvr driver list --show-properties
 Run an inline query using an existing datasource:
 
 ```bash
-dbvr sql -ds my-datasource --format csv "select * from my_table"
+dbvr sql -ds my-datasource-id --format csv "select * from my_table"
 ```
 
 Read SQL from a file or standard input:
 
 ```bash
-dbvr sql -ds my-datasource --format json --input-file query.sql
+dbvr sql -ds my-datasource-id --format json --input-file query.sql
 cat query.sql | dbvr sql -ds my-datasource --format json
 ```
 
 Write results to a file:
 
 ```bash
-dbvr sql -ds my-datasource --format csv --output-file result.csv "select * from my_table"
+dbvr sql -ds my-datasource-id --format csv --output-file result.csv "select * from my_table"
 ```
 
 ### Explore metadata
@@ -139,10 +139,10 @@ dbvr sql -ds my-datasource --format csv --output-file result.csv "select * from 
 Examples of supported metadata operations include listing databases, listing tables, and getting DDL for database objects.
 
 ```bash
-dbvr -ds my-datasource database list
+dbvr -ds my-datasource-id database list
 # or
-# dbvr -ds my-datasource schema list ...
-# dbvr -ds my-datasource table ddl ...
+# dbvr -ds my-datasource-id schema list ...
+# dbvr -ds my-datasource-id table ddl ...
 ```
 
 > Exact options and available subcommands may vary by command. Use `dbvr <command> --help` to inspect the current CLI surface.
