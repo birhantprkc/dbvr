@@ -49,7 +49,7 @@ import java.nio.file.Path;
 public class CLIApplicationBase extends BaseApplicationImpl {
     private static final Log log = Log.getLog(CLIApplicationBase.class);
     protected Path workspaceDirCurrent;
-    private boolean started = false;
+    private volatile boolean started = false;
 
     private DBPPreferenceStore preferenceStore;
     private boolean stateless = false;
