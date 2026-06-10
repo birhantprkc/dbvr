@@ -169,10 +169,7 @@ dbvr meta database list -ds my-datasource-id
 
 ## Maintainers
 
-This project is maintained by the DBeaver team and contributors.
-
-- Organization: [dbeaver](https://github.com/dbeaver)
-- Repository: [dbeaver/dbvr](https://github.com/dbeaver/dbvr)
+This project is maintained by the [DBeaver team](https://github.com/dbeaver) and contributors.
 
 ## License
 
