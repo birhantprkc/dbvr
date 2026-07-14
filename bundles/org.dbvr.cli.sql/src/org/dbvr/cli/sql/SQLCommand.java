@@ -25,6 +25,7 @@ import org.jkiss.dbeaver.model.DBPDataSourceContainer;
 import org.jkiss.dbeaver.model.cli.*;
 import org.jkiss.dbeaver.model.cli.model.DataSourceUpdater;
 import org.jkiss.dbeaver.model.cli.model.option.*;
+import org.jkiss.dbeaver.model.data.json.JSONUtils;
 import org.jkiss.dbeaver.model.exec.DBCExecutionContext;
 import org.jkiss.dbeaver.model.exec.DBCStatistics;
 import org.jkiss.dbeaver.model.exec.output.DBCOutputSeverity;
@@ -289,7 +290,7 @@ public class SQLCommand extends CLIAbstractSubcommand {
                 consumer.finishTransfer(monitor, false);
                 DBCStatistics statistics = scriptProcessor.getTotalStatistics();
 
-                if (!disableStatus) {
+                if (!disableStatus && !isJsonLog()) {
                     String statusMessage;
                     if (statistics.getRowsFetched() > 0) {
                         statusMessage = "Rows read: " + statistics.getRowsFetched() + ", (" + statistics.getTotalTime() + "ms)\n";
@@ -318,6 +319,9 @@ public class SQLCommand extends CLIAbstractSubcommand {
                     context().addResult(result);
                     byteArrayOutputStream.reset();
                 }
+                if (!disableStatus && isJsonLog()) {
+                    printJsonLog(buildOkStatusJson(statistics));
+                }
                 context().setPostAction(CLIProcessResult.PostAction.SHUTDOWN);
             }
         } catch (Exception e) {
@@ -330,6 +334,35 @@ public class SQLCommand extends CLIAbstractSubcommand {
         settings.setOutputClipboard(false);
         settings.setOutputEncodingBOM(false);
         return settings;
+    }
+
+    private boolean isJsonLog() {
+        return context().getLogFormat() == CLILogFormat.JSON;
+    }
+
+    @NotNull
+    private static String buildOkStatusJson(@NotNull DBCStatistics statistics) {
+        return JSONUtils.GSON.toJson(new SQLExecutionStatus(statistics));
+    }
+
+    private record SQLExecutionStatus(
+        @NotNull String status,
+        @Nullable Long rows,
+        @Nullable Long updated,
+        long durationMs
+    ) {
+        SQLExecutionStatus(@NotNull DBCStatistics statistics) {
+            this(
+                "ok",
+                statistics.getRowsFetched() > 0 ? statistics.getRowsFetched() : null,
+                statistics.getRowsFetched() <= 0 && statistics.getRowsUpdated() > 0 ? statistics.getRowsUpdated() : null,
+                statistics.getTotalTime()
+            );
+        }
+    }
+
+    private static void printJsonLog(@NotNull String json) {
+        System.err.println(json);
     }
 
     private static class LogOutputWriter implements DBCOutputWriter {
