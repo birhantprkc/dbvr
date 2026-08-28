@@ -61,19 +61,12 @@ package
 
 ## Develop in IDEA
 
-To generate IntelliJ IDEA project files and RCP launch configurations, run from the `dbvr` repository root:
-
-```bash
-./generate_workspace.sh
-```
-
+To generate IntelliJ IDEA project files and RCP launch configurations, run from the `dbvr` repository root: `./tools/generate_workspace.sh`.
 On Windows, use `generate_workspace.cmd`.
 
 Then run
 ```bash
 cd ../dbeaver
-```
-```bash
 mvn generate-sources
 ```
 
